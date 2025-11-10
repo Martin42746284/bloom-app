@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                             System.currentTimeMillis()
                         )
                     ) },
+                    onCardClick = {},
                     onDeleteClick = { viewModel.deleteDiscovery(it) }
                 )
             }

@@ -1,10 +1,8 @@
 package com.example.plantdiscovery.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaptureScreen(
     imagePath: String?,
@@ -24,7 +23,7 @@ fun CaptureScreen(
         topBar = {
             TopAppBar(
                 title = { Text("New Discovery") },
-                navigationIcon = { IconButton(onClick = onCancel) { Icon(Icons.Default.PhotoCamera, null) } }
+                navigationIcon = { IconButton(onClick = onCancel) { Text("📸")} }
             )
         }
     ) { padding ->
@@ -64,13 +63,13 @@ fun CaptureScreen(
                 CircularProgressIndicator()
             } else {
                 Button(onClick = onCaptureClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-                    Icon(Icons.Default.PhotoCamera, null)
+                    Text("📸")
                     Spacer(Modifier.width(8.dp))
                     Text("Capture Photo")
                 }
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(onClick = onGalleryClick, modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-                    Icon(Icons.Default.PhotoLibrary, null)
+                    Text("📸")
                     Spacer(Modifier.width(8.dp))
                     Text("Select from Gallery")
                 }

@@ -1,4 +1,4 @@
-package com.example.plantdiscovery.repositories
+package com.example.plantdiscovery.repository
 
 import com.example.plantdiscovery.model.Discovery
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +16,7 @@ class DiscoveryRepository {
     val discoveries: StateFlow<List<Discovery>> = _discoveries
 
     fun addFakeDiscovery(discovery: Discovery) {
-        _discoveries.value = _discoveries.value + discovery
+        _discoveries.value += discovery
     }
     fun deleteDiscovery(discovery: Discovery) {
         _discoveries.value = _discoveries.value.filterNot { it.id == discovery.id }

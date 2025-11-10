@@ -2,7 +2,7 @@ package com.example.plantdiscovery
 
 import androidx.lifecycle.ViewModel
 import com.example.plantdiscovery.model.Discovery
-import com.example.plantdiscovery.repositories.DiscoveryRepository
+import com.example.plantdiscovery.repository.DiscoveryRepository
 import kotlinx.coroutines.flow.StateFlow
 
 class JournalViewModel(private val repository: DiscoveryRepository) : ViewModel() {

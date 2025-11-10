@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "224011472685",
+    "project_id": "bloom-15ca8",
+    "storage_bucket": "bloom-15ca8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:224011472685:android:29ec3c6ad4c39b4d508da4",
+        "android_client_info": {
+          "package_name": "com.example.plantdiscovery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKdPmGmbe4HxLRBK9KnNTg3AXvrOjhAGA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

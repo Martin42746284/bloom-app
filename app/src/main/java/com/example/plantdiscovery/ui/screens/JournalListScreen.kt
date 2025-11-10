@@ -1,11 +1,10 @@
 package com.example.plantdiscovery.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +17,7 @@ import com.example.plantdiscovery.model.Discovery
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalListScreen(
     discoveries: List<Discovery>,
@@ -33,7 +33,7 @@ fun JournalListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick, containerColor = Color(0xFF4CAF50)) {
-                Icon(Icons.Default.Add, contentDescription = "Ajouter")
+                Text("+", color = Color.White)
             }
         }
     ) { padding ->
