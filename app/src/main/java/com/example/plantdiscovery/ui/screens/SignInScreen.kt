@@ -1,5 +1,6 @@
 package com.example.plantdiscovery.ui.screens
 
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,27 +14,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantdiscovery.ui.theme.PrimaryGreen
 
-
 @Preview(showBackground = true)
 @Composable
-fun AuthScreenPreview() {
-    AuthScreen(
+fun SignInScreenPreview() {
+    SignInScreen(
         onSignInClick = { email, password -> /* mock */ },
-        onSignUpClick = { email, password -> /* mock */ },
         onGoogleClick = {},
-        isSignIn = true,
-        onSwitchMode = {}
+        onGoToSignUp = {}
     )
 }
+
 @Composable
-fun AuthScreen(
+fun SignInScreen(
     onSignInClick: (String, String) -> Unit,
-    onSignUpClick: (String, String) -> Unit,
     onGoogleClick: () -> Unit,
-    isSignIn: Boolean,
-    onSwitchMode: () -> Unit,
+    onGoToSignUp: () -> Unit
 ) {
-    var isSignIn by remember { mutableStateOf(isSignIn) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -43,31 +39,14 @@ fun AuthScreen(
     ) {
         Spacer(Modifier.height(24.dp))
         Box(
-            Modifier.size(72.dp)
-                .background(Color(0xFFE9F7EF), RoundedCornerShape(16.dp)),
+            Modifier.size(72.dp).background(Color(0xFFE9F7EF), RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) { Text("🌱", fontSize = 36.sp) }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(36.dp))
 
-        // Barre d'onglets
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Button(
-                onClick = { isSignIn = isSignIn },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSignIn) PrimaryGreen else Color(0xFFF3F3F3)
-                ),
-                modifier = Modifier.weight(1f)
-            ) { Text("Sign In", color = if (isSignIn) Color.White else Color.Black) }
-            Button(
-                onClick = { isSignIn = false },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (!isSignIn) PrimaryGreen else Color(0xFFF3F3F3)
-                ),
-                modifier = Modifier.weight(1f)
-            ) { Text("Sign Up", color = if (!isSignIn) Color.White else Color.Black) }
-        }
+        Text("Sign In", style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(18.dp))
 
-        Spacer(Modifier.height(20.dp))
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -81,22 +60,23 @@ fun AuthScreen(
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // Connexion ou inscription
         Button(
-            onClick = {
-                if (isSignIn) onSignInClick(email, password)
-                else onSignUpClick(email, password)
-            },
+            onClick = { onSignInClick(email, password) },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             colors = ButtonDefaults.buttonColors(PrimaryGreen)
-        ) { Text(if (isSignIn) "Sign In" else "Sign Up", color = Color.White) }
-
+        ) { Text("Sign In", color = Color.White) }
         Spacer(Modifier.height(12.dp))
+
         OutlinedButton(
             onClick = onGoogleClick,
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) { Text("Continue with Google") }
+
+        Spacer(Modifier.height(18.dp))
+        TextButton(onClick = onGoToSignUp) {
+            Text("Don't have an account? Sign Up")
+        }
     }
 }

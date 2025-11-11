@@ -13,7 +13,8 @@ import com.example.plantdiscovery.repository.DiscoveryRepository
 import com.example.plantdiscovery.ui.screens.*
 
 sealed class Screen(val route: String) {
-    object Auth : Screen("auth")
+    object SignIn : Screen("sign_in")
+    object SignUp : Screen("sign_up")
     object JournalList : Screen("journal_list")
     object Capture : Screen("capture")
     object Detail : Screen("detail/{discoveryId}") {
@@ -24,25 +25,42 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    repository: DiscoveryRepository      // injecte le repository ici !
+    repository: DiscoveryRepository
 ) {
     val viewModel = remember { JournalViewModel(repository) }
     val discoveries by viewModel.discoveries.collectAsState()
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Auth.route
+        startDestination = Screen.SignIn.route
     ) {
-        composable(Screen.Auth.route) {
-            AuthScreen(
-                onSignInClick = { _, _ -> navController.navigate(Screen.JournalList.route) },
-                onSignUpClick = { _, _ -> navController.navigate(Screen.JournalList.route) },
-                onGoogleClick = { /* TODO... */ },
-                isSignIn = true,
-                onSwitchMode = {}
+        // Sign In Screen
+        composable(Screen.SignIn.route) {
+            SignInScreen(
+                onSignInClick = { _, _ ->
+                    navController.navigate(Screen.JournalList.route) {
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                },
+                onGoogleClick = { /* TODO: Google Auth */ },
+                onGoToSignUp = { navController.navigate(Screen.SignUp.route) }
             )
         }
 
+        // Sign Up Screen
+        composable(Screen.SignUp.route) {
+            SignUpScreen(
+                onSignUpClick = { _, _ ->
+                    navController.navigate(Screen.JournalList.route) {
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                },
+                onGoogleClick = { /* TODO: Google Auth */ },
+                onGoToSignIn = { navController.popBackStack() }
+            )
+        }
+
+        // Journal List Screen
         composable(Screen.JournalList.route) {
             JournalListScreen(
                 discoveries = discoveries,
@@ -54,16 +72,18 @@ fun NavGraph(
             )
         }
 
+        // Capture Screen
         composable(Screen.Capture.route) {
             CaptureScreen(
                 imagePath = null,
-                onCaptureClick = { /* TODO : ajouter logique de photo */ },
-                onGalleryClick = { /* TODO : ajouter logique de galerie */ },
+                onCaptureClick = { /* TODO : ajouter logique de photo */ },
+                onGalleryClick = { /* TODO : ajouter logique de galerie */ },
                 loading = false,
                 onCancel = { navController.popBackStack() }
             )
         }
 
+        // Detail Screen
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("discoveryId") { type = NavType.IntType })

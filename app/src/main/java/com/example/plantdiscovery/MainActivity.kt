@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                             "demo",
                             "Pothos",
                             "Le Pothos est quasi impossible à tuer.",
-                            "/storage/demo/pothos.jpg",
+                            "/home/martin/Téléchargements/back.jpg",
                             System.currentTimeMillis()
                         )
                     ) },
