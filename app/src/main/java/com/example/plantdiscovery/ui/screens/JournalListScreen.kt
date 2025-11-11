@@ -105,7 +105,6 @@ fun JournalListScreen(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        // Image en haut
                         Image(
                             painter = rememberAsyncImagePainter(discovery.imagePath),
                             contentDescription = null,
@@ -117,8 +116,6 @@ fun JournalListScreen(
                         )
 
                         Spacer(Modifier.height(12.dp))
-
-                        // Nom de la plante
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("🌿", fontSize = 18.sp)
                             Spacer(Modifier.width(6.dp))
@@ -128,10 +125,7 @@ fun JournalListScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
-
                         Spacer(Modifier.height(6.dp))
-
-                        // Date
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("📅", fontSize = 14.sp)
                             Spacer(Modifier.width(6.dp))
