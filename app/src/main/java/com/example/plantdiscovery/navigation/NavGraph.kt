@@ -1,13 +1,9 @@
 package com.example.plantdiscovery.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
+import androidx.compose.runtime.*
+import androidx.navigation.*
 import androidx.navigation.compose.*
-import androidx.navigation.navArgument
+import com.example.plantdiscovery.AuthViewModel
 import com.example.plantdiscovery.JournalViewModel
 import com.example.plantdiscovery.repository.DiscoveryRepository
 import com.example.plantdiscovery.ui.screens.*
@@ -25,7 +21,8 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    repository: DiscoveryRepository
+    repository: DiscoveryRepository,
+    authViewModel: AuthViewModel
 ) {
     val viewModel = remember { JournalViewModel(repository) }
     val discoveries by viewModel.discoveries.collectAsState()
@@ -36,28 +33,53 @@ fun NavGraph(
     ) {
         // Sign In Screen
         composable(Screen.SignIn.route) {
+            val loading by authViewModel.loading.collectAsState()
+            val error by authViewModel.error.collectAsState()
             SignInScreen(
-                onSignInClick = { _, _ ->
-                    navController.navigate(Screen.JournalList.route) {
-                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                loading = loading,
+                error = error,
+                onSignInClick = { email, password ->
+                    authViewModel.signIn(email, password) {
+                        navController.navigate(Screen.JournalList.route) {
+                            popUpTo(Screen.SignIn.route) { inclusive = true }
+                        }
                     }
                 },
                 onGoogleClick = { /* TODO: Google Auth */ },
-                onGoToSignUp = { navController.navigate(Screen.SignUp.route) }
+                onGoToSignUp = { navController.navigate(Screen.SignUp.route) },
+                onErrorDismiss = { authViewModel.clearError() }
             )
         }
 
         // Sign Up Screen
         composable(Screen.SignUp.route) {
+            val loading by authViewModel.loading.collectAsState()
+            val error by authViewModel.error.collectAsState()
+            val success by authViewModel.successSignUp.collectAsState()
             SignUpScreen(
-                onSignUpClick = { _, _ ->
-                    navController.navigate(Screen.JournalList.route) {
-                        popUpTo(Screen.SignIn.route) { inclusive = true }
-                    }
+                loading = loading,
+                error = error,
+                success = success,
+                onSignUpClick = { email, password, confirm ->
+                    authViewModel.signUp(email, password, confirm)
                 },
-                onGoogleClick = { /* TODO: Google Auth */ },
-                onGoToSignIn = { navController.popBackStack() }
+                onGoToSignIn = {
+                    authViewModel.clearSignUpSuccess()
+                    navController.popBackStack(Screen.SignIn.route, false)
+                },
+                onErrorDismiss = { authViewModel.clearError() },
+                onSuccessDismiss = {
+                    authViewModel.clearSignUpSuccess()
+                    navController.popBackStack(Screen.SignIn.route, false)
+                }
             )
+            // Redirect auto après succès !
+            LaunchedEffect(success) {
+                if (success) {
+                    authViewModel.clearSignUpSuccess()
+                    navController.popBackStack(Screen.SignIn.route, false)
+                }
+            }
         }
 
         // Journal List Screen
@@ -76,8 +98,8 @@ fun NavGraph(
         composable(Screen.Capture.route) {
             CaptureScreen(
                 imagePath = null,
-                onCaptureClick = { /* TODO : ajouter logique de photo */ },
-                onGalleryClick = { /* TODO : ajouter logique de galerie */ },
+                onCaptureClick = { /* TODO : logique photo */ },
+                onGalleryClick = { /* TODO : logique galerie */ },
                 loading = false,
                 onCancel = { navController.popBackStack() }
             )

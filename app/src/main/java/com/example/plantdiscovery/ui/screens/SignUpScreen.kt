@@ -1,6 +1,7 @@
 package com.example.plantdiscovery.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,26 +15,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantdiscovery.ui.theme.PrimaryGreen
 
-@Preview(showBackground = true)
-@Composable
-fun SignUpScreenPreview() {
-    SignUpScreen(
-        onSignUpClick = { email, password -> /* mock */ },
-        onGoogleClick = {},
-        onGoToSignIn = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun SignUpScreenPreview() {
+//    SignUpScreen(
+//        onSignUpClick = { email, password -> /* mock */ },
+//        onGoogleClick = {},
+//        onGoToSignIn = {}
+//    )
+//}
 
 @Composable
 fun SignUpScreen(
-    onSignUpClick: (String, String) -> Unit,
-    onGoogleClick: () -> Unit,
-    onGoToSignIn: () -> Unit
+    loading: Boolean,
+    error: String?,
+    success: Boolean,
+    onSignUpClick: (String, String, String) -> Unit,
+    onGoToSignIn: () -> Unit,
+    onErrorDismiss: () -> Unit = {},
+    onSuccessDismiss: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
 
     Column(
         Modifier.fillMaxSize().padding(32.dp),
@@ -53,6 +57,7 @@ fun SignUpScreen(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email Address") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(14.dp))
@@ -60,6 +65,7 @@ fun SignUpScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
@@ -67,37 +73,59 @@ fun SignUpScreen(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
             label = { Text("Confirm Password") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        if (showError && password != confirmPassword) {
-            Text(
-                "Passwords do not match!",
-                color = Color.Red,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
-            )
-        }
-        Spacer(Modifier.height(16.dp))
+
+        Spacer(Modifier.height(18.dp))
 
         Button(
-            onClick = {
-                showError = (password != confirmPassword)
-                if (!showError) {
-                    onSignUpClick(email, password)
-                }
-            },
+            onClick = { onSignUpClick(email, password, confirmPassword) },
             modifier = Modifier.fillMaxWidth().height(48.dp),
-            colors = ButtonDefaults.buttonColors(PrimaryGreen)
-        ) { Text("Sign Up", color = Color.White) }
-        Spacer(Modifier.height(12.dp))
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+            enabled = !loading
+        ) {
+            if (loading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+            } else {
+                Text("Sign Up", color = Color.White)
+            }
+        }
+
+        if (error != null) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                error,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .clickable { onErrorDismiss() }
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+
+        if (success) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Account created! Please sign in.",
+                color = PrimaryGreen,
+                modifier = Modifier.clickable { onSuccessDismiss() }
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
 
         OutlinedButton(
-            onClick = onGoogleClick,
-            modifier = Modifier.fillMaxWidth().height(48.dp)
+            onClick = {/* onGoogleClick() */ },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            enabled = !loading
         ) { Text("Continue with Google") }
 
         Spacer(Modifier.height(18.dp))
-        TextButton(onClick = onGoToSignIn) {
+        TextButton(
+            onClick = onGoToSignIn,
+            enabled = !loading
+        ) {
             Text("Already have an account? Sign In")
         }
     }

@@ -2,6 +2,7 @@ package com.example.plantdiscovery.ui.screens
 
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,21 +15,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantdiscovery.ui.theme.PrimaryGreen
 
-@Preview(showBackground = true)
-@Composable
-fun SignInScreenPreview() {
-    SignInScreen(
-        onSignInClick = { email, password -> /* mock */ },
-        onGoogleClick = {},
-        onGoToSignUp = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun SignInScreenPreview() {
+//    SignInScreen(
+//        onSignInClick = { email, password -> /* mock */ },
+//        onGoogleClick = {},
+//        onGoToSignUp = {}
+//    )
+//}
 
 @Composable
 fun SignInScreen(
+    loading: Boolean,
+    error: String?,
     onSignInClick: (String, String) -> Unit,
     onGoogleClick: () -> Unit,
-    onGoToSignUp: () -> Unit
+    onGoToSignUp: () -> Unit,
+    onErrorDismiss: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -51,6 +55,7 @@ fun SignInScreen(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email Address") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(14.dp))
@@ -58,6 +63,7 @@ fun SignInScreen(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
+            singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(24.dp))
@@ -65,17 +71,39 @@ fun SignInScreen(
         Button(
             onClick = { onSignInClick(email, password) },
             modifier = Modifier.fillMaxWidth().height(48.dp),
-            colors = ButtonDefaults.buttonColors(PrimaryGreen)
-        ) { Text("Sign In", color = Color.White) }
-        Spacer(Modifier.height(12.dp))
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+            enabled = !loading
+        ) {
+            if (loading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+            } else {
+                Text("Sign In", color = Color.White)
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        if (error != null) {
+            Text(
+                error,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .clickable { onErrorDismiss() }
+            )
+            Spacer(Modifier.height(4.dp))
+        }
 
         OutlinedButton(
             onClick = onGoogleClick,
-            modifier = Modifier.fillMaxWidth().height(48.dp)
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            enabled = !loading
         ) { Text("Continue with Google") }
 
         Spacer(Modifier.height(18.dp))
-        TextButton(onClick = onGoToSignUp) {
+        TextButton(
+            onClick = onGoToSignUp,
+            enabled = !loading
+        ) {
             Text("Don't have an account? Sign Up")
         }
     }
