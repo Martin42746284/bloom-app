@@ -1,12 +1,14 @@
 package com.example.plantdiscovery.navigation
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.example.plantdiscovery.AuthViewModel
 import com.example.plantdiscovery.JournalViewModel
 import com.example.plantdiscovery.repository.DiscoveryRepository
 import com.example.plantdiscovery.ui.screens.*
+import com.google.firebase.auth.FirebaseAuth
 
 sealed class Screen(val route: String) {
     object SignIn : Screen("sign_in")
@@ -24,6 +26,8 @@ fun NavGraph(
     repository: DiscoveryRepository,
     authViewModel: AuthViewModel
 ) {
+    // ✅ Déclaré UNE SEULE FOIS au niveau du NavGraph
+    val context = LocalContext.current
     val viewModel = remember { JournalViewModel(repository) }
     val discoveries by viewModel.discoveries.collectAsState()
 
@@ -35,6 +39,7 @@ fun NavGraph(
         composable(Screen.SignIn.route) {
             val loading by authViewModel.loading.collectAsState()
             val error by authViewModel.error.collectAsState()
+
             SignInScreen(
                 loading = loading,
                 error = error,
@@ -45,8 +50,17 @@ fun NavGraph(
                         }
                     }
                 },
-                onGoogleClick = { /* TODO: Google Auth */ },
-                onGoToSignUp = { navController.navigate(Screen.SignUp.route) },
+                onGoogleClick = {
+                    // ✅ CORRIGÉ - Supprimé webClientId
+                    authViewModel.signInWithGoogle(context = context) {
+                        navController.navigate(Screen.JournalList.route) {
+                            popUpTo(Screen.SignIn.route) { inclusive = true }
+                        }
+                    }
+                },
+                onGoToSignUp = {
+                    navController.navigate(Screen.SignUp.route)
+                },
                 onErrorDismiss = { authViewModel.clearError() }
             )
         }
@@ -55,42 +69,46 @@ fun NavGraph(
         composable(Screen.SignUp.route) {
             val loading by authViewModel.loading.collectAsState()
             val error by authViewModel.error.collectAsState()
-            val success by authViewModel.successSignUp.collectAsState()
+
             SignUpScreen(
                 loading = loading,
                 error = error,
-                success = success,
-                onSignUpClick = { email, password, confirm ->
-                    authViewModel.signUp(email, password, confirm)
+                onSignUpClick = { email, password ->
+                    authViewModel.signUp(email, password) {
+                        navController.navigate(Screen.JournalList.route) {
+                            popUpTo(Screen.SignUp.route) { inclusive = true }
+                        }
+                    }
+                },
+                onGoogleClick = {
+                    // ✅ CORRIGÉ - Supprimé webClientId
+                    authViewModel.signInWithGoogle(context = context) {
+                        navController.navigate(Screen.JournalList.route) {
+                            popUpTo(Screen.SignUp.route) { inclusive = true }
+                        }
+                    }
                 },
                 onGoToSignIn = {
-                    authViewModel.clearSignUpSuccess()
-                    navController.popBackStack(Screen.SignIn.route, false)
+                    navController.popBackStack()
                 },
-                onErrorDismiss = { authViewModel.clearError() },
-                onSuccessDismiss = {
-                    authViewModel.clearSignUpSuccess()
-                    navController.popBackStack(Screen.SignIn.route, false)
-                }
+                onErrorDismiss = { authViewModel.clearError() }
             )
-            // Redirect auto après succès !
-            LaunchedEffect(success) {
-                if (success) {
-                    authViewModel.clearSignUpSuccess()
-                    navController.popBackStack(Screen.SignIn.route, false)
-                }
-            }
         }
+
 
         // Journal List Screen
         composable(Screen.JournalList.route) {
             JournalListScreen(
                 discoveries = discoveries,
-                onAddClick = { navController.navigate(Screen.Capture.route) },
+                onAddClick = {
+                    navController.navigate(Screen.Capture.route)
+                },
                 onCardClick = { discovery ->
                     navController.navigate(Screen.Detail.createRoute(discovery.id))
                 },
-                onDeleteClick = { viewModel.deleteDiscovery(it) }
+                onDeleteClick = { discovery ->
+                    viewModel.deleteDiscovery(discovery)
+                }
             )
         }
 
@@ -98,28 +116,43 @@ fun NavGraph(
         composable(Screen.Capture.route) {
             CaptureScreen(
                 imagePath = null,
-                onCaptureClick = { /* TODO : logique photo */ },
-                onGalleryClick = { /* TODO : logique galerie */ },
+                onCaptureClick = { /* TODO */ },
+                onGalleryClick = { /* TODO */ },
                 loading = false,
-                onCancel = { navController.popBackStack() }
+                onCancel = {
+                    navController.popBackStack()
+                }
             )
         }
 
         // Detail Screen
         composable(
             route = Screen.Detail.route,
-            arguments = listOf(navArgument("discoveryId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("discoveryId")
-            val discovery = discoveries.find { it.id == id } ?: return@composable
-            DetailScreen(
-                discovery = discovery,
-                onBack = { navController.popBackStack() },
-                onDelete = {
-                    viewModel.deleteDiscovery(discovery)
-                    navController.popBackStack()
+            arguments = listOf(
+                navArgument("discoveryId") {
+                    type = NavType.IntType
                 }
             )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getInt("discoveryId")
+            val discovery = discoveries.find { it.id == id }
+
+            if (discovery != null) {
+                DetailScreen(
+                    discovery = discovery,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onDelete = {
+                        viewModel.deleteDiscovery(discovery)
+                        navController.popBackStack()
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
         }
     }
 }

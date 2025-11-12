@@ -23,6 +23,7 @@ import com.example.plantdiscovery.ui.theme.PrimaryGreen
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 @Preview(showBackground = true)
 @Composable
 fun JournalListScreenPreview() {
