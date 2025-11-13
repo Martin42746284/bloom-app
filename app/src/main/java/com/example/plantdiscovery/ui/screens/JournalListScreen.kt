@@ -24,35 +24,35 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-@Preview(showBackground = true)
-@Composable
-fun JournalListScreenPreview() {
-    val sampleDiscoveries = listOf(
-        Discovery(
-            id = 1,
-            userId = "user123",
-            plantName = "Monstera Deliciosa",
-            funFact = "Cette plante est originaire des forêts tropicales.",
-            imagePath = "https://upload.wikimedia.org/wikipedia/commons/4/4d/Monstera_deliciosa.jpg",
-            timestamp = System.currentTimeMillis()
-        ),
-        Discovery(
-            id = 2,
-            userId = "user456",
-            plantName = "Ficus Lyrata",
-            funFact = "Connue comme plante violon.",
-            imagePath = "",
-            timestamp = System.currentTimeMillis()
-        )
-    )
-
-    JournalListScreen(
-        discoveries = sampleDiscoveries,
-        onAddClick = {},
-        onCardClick = {},
-        onDeleteClick = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun JournalListScreenPreview() {
+//    val sampleDiscoveries = listOf(
+//        Discovery(
+//            id = 1,
+//            userId = "user123",
+//            plantName = "Monstera Deliciosa",
+//            funFact = "Cette plante est originaire des forêts tropicales.",
+//            imagePath = "https://upload.wikimedia.org/wikipedia/commons/4/4d/Monstera_deliciosa.jpg",
+//            timestamp = System.currentTimeMillis()
+//        ),
+//        Discovery(
+//            id = 2,
+//            userId = "user456",
+//            plantName = "Ficus Lyrata",
+//            funFact = "Connue comme plante violon.",
+//            imagePath = "",
+//            timestamp = System.currentTimeMillis()
+//        )
+//    )
+//
+//    JournalListScreen(
+//        discoveries = sampleDiscoveries,
+//        onAddClick = {},
+//        onCardClick = {},
+//        onDeleteClick = {}
+//    )
+//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

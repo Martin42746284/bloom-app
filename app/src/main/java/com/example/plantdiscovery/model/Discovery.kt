@@ -1,10 +1,15 @@
 package com.example.plantdiscovery.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "discoveries")
 data class Discovery(
-    val id: Int,
-    val userId: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     val plantName: String,
-    val funFact: String,
     val imagePath: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val funFact: String = ""
 )
+

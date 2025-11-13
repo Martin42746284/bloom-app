@@ -1,24 +1,29 @@
 package com.example.plantdiscovery.repository
 
+import com.example.plantdiscovery.dao.DiscoveryDao
 import com.example.plantdiscovery.model.Discovery
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
-class DiscoveryRepository {
+class DiscoveryRepository(private val discoveryDao: DiscoveryDao) {
 
-    // Simuler la donnée (pour tests UI)
-    private val _discoveries = MutableStateFlow(
-        listOf(
-            Discovery(1, "demo", "Ficus lyrata", "Le Ficus est aussi appelé figuier lyre.", "", System.currentTimeMillis()),
-            Discovery(2, "demo", "Monstera Deliciosa", "Le Monstera a des trous décoratifs dans ses feuilles.", "", System.currentTimeMillis()-86400000)
-        )
-    )
-    val discoveries: StateFlow<List<Discovery>> = _discoveries
-
-    fun addFakeDiscovery(discovery: Discovery) {
-        _discoveries.value += discovery
+    // ✅ La fonction qui manquait !
+    fun getAllDiscoveries(): Flow<List<Discovery>> {
+        return discoveryDao.getAllDiscoveries()
     }
-    fun deleteDiscovery(discovery: Discovery) {
-        _discoveries.value = _discoveries.value.filterNot { it.id == discovery.id }
+
+    suspend fun getDiscoveryById(id: Int): Discovery? {
+        return discoveryDao.getDiscoveryById(id)
+    }
+
+    suspend fun insertDiscovery(discovery: Discovery) {
+        discoveryDao.insertDiscovery(discovery)
+    }
+
+    suspend fun updateDiscovery(discovery: Discovery) {
+        discoveryDao.updateDiscovery(discovery)
+    }
+
+    suspend fun deleteDiscovery(discovery: Discovery) {
+        discoveryDao.deleteDiscovery(discovery)
     }
 }

@@ -114,25 +114,26 @@ fun NavGraph(
 
         // Capture Screen
         composable(Screen.Capture.route) {
+            val context = LocalContext.current
+
             CaptureScreen(
                 imagePath = null,
-                onCaptureClick = { /* TODO */ },
-                onGalleryClick = { /* TODO */ },
+                onCaptureClick = { /* Déjà géré dans CaptureScreen */ },
+                onGalleryClick = { /* Déjà géré dans CaptureScreen */ },
                 loading = false,
                 onCancel = {
+                    navController.popBackStack()
+                },
+                onSave = { plantName, imageUri ->
+                    viewModel.addDiscovery(plantName, imageUri, context)
                     navController.popBackStack()
                 }
             )
         }
 
-        // Detail Screen
         composable(
             route = Screen.Detail.route,
-            arguments = listOf(
-                navArgument("discoveryId") {
-                    type = NavType.IntType
-                }
-            )
+            arguments = listOf(navArgument("discoveryId") { type = NavType.IntType })
         ) { backStackEntry ->
             val id = backStackEntry.arguments?.getInt("discoveryId")
             val discovery = discoveries.find { it.id == id }
@@ -140,19 +141,15 @@ fun NavGraph(
             if (discovery != null) {
                 DetailScreen(
                     discovery = discovery,
-                    onBack = {
-                        navController.popBackStack()
-                    },
+                    onBack = { navController.popBackStack() },
                     onDelete = {
-                        viewModel.deleteDiscovery(discovery)
+                        viewModel.deleteDiscovery(discovery)  // ✅ Supprime l'image + DB
                         navController.popBackStack()
                     }
                 )
-            } else {
-                LaunchedEffect(Unit) {
-                    navController.popBackStack()
-                }
             }
         }
+
+
     }
 }

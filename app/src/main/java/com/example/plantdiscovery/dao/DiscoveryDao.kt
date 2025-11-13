@@ -1,18 +1,25 @@
 package com.example.plantdiscovery.dao
 
-
 import androidx.room.*
-import com.example.plantdiscovery.entities.DiscoveryEntity
+import com.example.plantdiscovery.model.Discovery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DiscoveryDao {
+
     @Query("SELECT * FROM discoveries ORDER BY timestamp DESC")
-    fun getAll(): Flow<List<DiscoveryEntity>>
+    fun getAllDiscoveries(): Flow<List<Discovery>>
+
+    @Query("SELECT * FROM discoveries WHERE id = :id")
+    suspend fun getDiscoveryById(id: Int): Discovery?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(discovery: DiscoveryEntity)
+    suspend fun insertDiscovery(discovery: Discovery)
+
+    @Update
+    suspend fun updateDiscovery(discovery: Discovery)
 
     @Delete
-    suspend fun delete(discovery: DiscoveryEntity)
+    suspend fun deleteDiscovery(discovery: Discovery)
 }
+
