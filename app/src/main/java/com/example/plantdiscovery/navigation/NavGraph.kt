@@ -112,24 +112,24 @@ fun NavGraph(
             )
         }
 
-        // Capture Screen
-        composable(Screen.Capture.route) {
-            val context = LocalContext.current
-
-            CaptureScreen(
-                imagePath = null,
-                onCaptureClick = { /* Déjà géré dans CaptureScreen */ },
-                onGalleryClick = { /* Déjà géré dans CaptureScreen */ },
-                loading = false,
-                onCancel = {
-                    navController.popBackStack()
-                },
-                onSave = { plantName, imageUri ->
-                    viewModel.addDiscovery(plantName, imageUri, context)
-                    navController.popBackStack()
-                }
-            )
-        }
+//        // Capture Screen
+//        composable(Screen.Capture.route) {
+//            val context = LocalContext.current
+//
+//            CaptureScreen(
+//                imagePath = null,
+//                onCaptureClick = { /* Déjà géré dans CaptureScreen */ },
+//                onGalleryClick = { /* Déjà géré dans CaptureScreen */ },
+//                loading = false,
+//                onCancel = {
+//                    navController.popBackStack()
+//                },
+//                onSave = { plantName, imageUri ->
+//                    viewModel.addDiscovery(plantName, imageUri, context)
+//                    navController.popBackStack()
+//                }
+//            )
+//        }
 
         composable(
             route = Screen.Detail.route,
@@ -149,7 +149,6 @@ fun NavGraph(
                 )
             }
         }
-
 
     }
 }
