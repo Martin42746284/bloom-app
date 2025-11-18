@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,61 +16,88 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
-import com.example.plantdiscovery.model.Discovery
+import com.example.plantdiscovery.entities.DiscoveryEntity
 import com.example.plantdiscovery.ui.theme.*
+import com.example.plantdiscovery.viewmodel.JournalViewModel
 import com.google.firebase.auth.FirebaseAuth
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Écran Journal affichant toutes les découvertes de plantes
+ * Intègre la liste des plantes identifiées par Gemini AI
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JournalListScreen(
-    discoveries: List<Discovery>,
+    viewModel: JournalViewModel,
     onAddClick: () -> Unit,
-    onCardClick: (Discovery) -> Unit,
-    onDeleteClick: (Discovery) -> Unit,
-    onSignOut: () -> Unit = {}
+    onCardClick: (Int) -> Unit,
+    onSignOut: () -> Unit
 ) {
+    val discoveries by viewModel.discoveries.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filteredDiscoveries by viewModel.filteredDiscoveries.collectAsStateWithLifecycle()
+
     // User info
     val currentUser = FirebaseAuth.getInstance().currentUser
     val displayName = currentUser?.displayName ?: "Plant Lover"
     val email = currentUser?.email ?: ""
     var showMenu by remember { mutableStateOf(false) }
-
-    // Animation state
-    val fabScale by animateFloatAsState(
-        targetValue = if (discoveries.isEmpty()) 1.1f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-    )
+    var showSearchBar by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            "My Garden",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                    if (showSearchBar) {
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChange = { viewModel.searchDiscoveries(it) },
+                            onClose = {
+                                showSearchBar = false
+                                viewModel.clearSearch()
+                            }
                         )
-                        Text(
-                            "${discoveries.size} plants discovered",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    } else {
+                        Column {
+                            Text(
+                                "My Garden",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "${discoveries.size} plants discovered",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 actions = {
+                    // Search button
+                    if (!showSearchBar && discoveries.isNotEmpty()) {
+                        IconButton(onClick = { showSearchBar = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Profile menu
                     Box {
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(
@@ -103,7 +129,7 @@ fun JournalListScreen(
                                 )
                             }
 
-                            Divider()
+                            HorizontalDivider()
 
                             DropdownMenuItem(
                                 text = {
@@ -158,8 +184,11 @@ fun JournalListScreen(
         },
         floatingActionButtonPosition = FabPosition.End
     ) { padding ->
+        // Utiliser filteredDiscoveries au lieu de discoveries
+        val displayList = if (searchQuery.isNotBlank()) filteredDiscoveries else discoveries
+
         AnimatedContent(
-            targetState = discoveries.isEmpty(),
+            targetState = displayList.isEmpty(),
             transitionSpec = {
                 fadeIn(animationSpec = tween(300)) togetherWith
                         fadeOut(animationSpec = tween(300))
@@ -168,38 +197,13 @@ fun JournalListScreen(
         ) { isEmpty ->
             if (isEmpty) {
                 // Empty state
-                Box(
+                EmptyState(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
                         .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Spa,
-                            contentDescription = null,
-                            modifier = Modifier.size(120.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                        )
-                        Spacer(Modifier.height(24.dp))
-                        Text(
-                            "No Plants Yet",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Start your garden by adding your first plant!",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
+                    isSearching = searchQuery.isNotBlank()
+                )
             } else {
                 // Plants list
                 LazyColumn(
@@ -212,10 +216,10 @@ fun JournalListScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(discoveries, key = { it.id }) { discovery ->
+                    items(displayList, key = { it.id }) { discovery ->
                         PlantCard(
                             discovery = discovery,
-                            onClick = { onCardClick(discovery) }
+                            onClick = { onCardClick(discovery.id) }
                         )
                     }
                 }
@@ -225,8 +229,74 @@ fun JournalListScreen(
 }
 
 @Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("Search plants...") },
+        leadingIcon = {
+            Icon(Icons.Default.Search, contentDescription = null)
+        },
+        trailingIcon = {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        },
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = Color.Transparent
+        )
+    )
+}
+
+@Composable
+private fun EmptyState(
+    modifier: Modifier = Modifier,
+    isSearching: Boolean = false
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = if (isSearching) Icons.Default.SearchOff else Icons.Default.Spa,
+                contentDescription = null,
+                modifier = Modifier.size(120.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            )
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text = if (isSearching) "No Plants Found" else "No Plants Yet",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = if (isSearching)
+                    "Try searching with different keywords"
+                else
+                    "Start your garden by adding your first plant!",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
 private fun PlantCard(
-    discovery: Discovery,
+    discovery: DiscoveryEntity,
     onClick: () -> Unit
 ) {
     ElevatedCard(
@@ -243,12 +313,31 @@ private fun PlantCard(
                     .width(120.dp)
                     .height(140.dp)
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(discovery.imagePath),
-                    contentDescription = discovery.plantName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                // Charger l'image depuis le chemin local
+                val imageFile = File(discovery.localImagePath)
+                if (imageFile.exists()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageFile),
+                        contentDescription = discovery.plantName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Image placeholder
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -262,6 +351,35 @@ private fun PlantCard(
                             )
                         )
                 )
+
+                // Badge "AI" pour indiquer l'identification par Gemini
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    tonalElevation = 2.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            "AI",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             }
 
             // Content
@@ -280,9 +398,9 @@ private fun PlantCard(
 
                 Spacer(Modifier.height(8.dp))
 
-                if (discovery.funFact.isNotBlank()) {
+                if (discovery.aiFact.isNotBlank()) {
                     Text(
-                        text = discovery.funFact,
+                        text = discovery.aiFact,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
@@ -329,70 +447,53 @@ private fun PlantCard(
 @Composable
 private fun JournalListScreenPreviewLight() {
     PlantdiscoveryTheme(darkTheme = false) {
-        JournalListScreen(
-            discoveries = listOf(
-                Discovery(
-                    id = 1,
-                    plantName = "Monstera Deliciosa",
-                    funFact = "Known for its unique split leaves that develop as it matures.",
-                    imagePath = "",
-                    timestamp = System.currentTimeMillis()
-                ),
-                Discovery(
-                    id = 2,
-                    plantName = "Snake Plant",
-                    funFact = "One of the best air-purifying plants and very easy to care for.",
-                    imagePath = "",
-                    timestamp = System.currentTimeMillis() - 86400000
-                ),
-                Discovery(
-                    id = 3,
-                    plantName = "Peace Lily",
-                    funFact = "Beautiful white flowers and excellent at removing toxins.",
-                    imagePath = "",
-                    timestamp = System.currentTimeMillis() - 172800000
-                )
+        PlantCard(
+            discovery = DiscoveryEntity(
+                id = 1,
+                userId = "preview_user",
+                plantName = "Monstera Deliciosa",
+                aiFact = "This tropical plant is known for its large, perforated leaves that develop naturally as it matures.",
+                localImagePath = "",
+                timestamp = System.currentTimeMillis()
             ),
-            onAddClick = {},
-            onCardClick = {},
-            onDeleteClick = {},
-            onSignOut = {}
+            onClick = {}
         )
     }
 }
 
-@Preview(name = "Dark Mode - With Plants", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = "Dark Mode - Card", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun JournalListScreenPreviewDark() {
+private fun PlantCardPreviewDark() {
     PlantdiscoveryTheme(darkTheme = true) {
-        JournalListScreen(
-            discoveries = listOf(
-                Discovery(
-                    id = 1,
-                    plantName = "Cactus",
-                    funFact = "Can store water for months and thrive in extreme conditions.",
-                    imagePath = "",
-                    timestamp = System.currentTimeMillis()
-                )
+        PlantCard(
+            discovery = DiscoveryEntity(
+                id = 1,
+                userId = "preview_user",
+                plantName = "Snake Plant",
+                aiFact = "One of the best air-purifying plants according to NASA. Releases oxygen at night!",
+                localImagePath = "",
+                timestamp = System.currentTimeMillis()
             ),
-            onAddClick = {},
-            onCardClick = {},
-            onDeleteClick = {},
-            onSignOut = {}
+            onClick = {}
         )
     }
 }
 
 @Preview(name = "Empty State", showBackground = true)
 @Composable
-private fun JournalListScreenPreviewEmpty() {
+private fun EmptyStatePreview() {
     PlantdiscoveryTheme {
-        JournalListScreen(
-            discoveries = emptyList(),
-            onAddClick = {},
-            onCardClick = {},
-            onDeleteClick = {},
-            onSignOut = {}
+        EmptyState(modifier = Modifier.fillMaxSize())
+    }
+}
+
+@Preview(name = "Search Empty State", showBackground = true)
+@Composable
+private fun SearchEmptyStatePreview() {
+    PlantdiscoveryTheme {
+        EmptyState(
+            modifier = Modifier.fillMaxSize(),
+            isSearching = true
         )
     }
 }

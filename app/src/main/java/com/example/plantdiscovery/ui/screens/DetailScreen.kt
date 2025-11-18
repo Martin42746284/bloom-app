@@ -2,7 +2,6 @@ package com.example.plantdiscovery.ui.screens
 
 import android.content.Intent
 import android.content.res.Configuration
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -24,16 +22,95 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
-import com.example.plantdiscovery.model.Discovery
+import com.example.plantdiscovery.entities.DiscoveryEntity
 import com.example.plantdiscovery.ui.theme.*
+import com.example.plantdiscovery.viewmodel.DetailViewModel
+import com.example.plantdiscovery.viewmodel.DetailUiState
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Écran de détail d'une découverte de plante
+ * Affiche toutes les informations identifiées par Gemini AI
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
-    discovery: Discovery,
+    viewModel: DetailViewModel,
+    discoveryId: Int,
+    onNavigateBack: () -> Unit
+) {
+    val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+
+    // Charger la découverte au démarrage
+    LaunchedEffect(discoveryId) {
+        viewModel.loadDiscovery(discoveryId)
+    }
+
+    when (val state = detailState) {
+        is DetailUiState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Loading discovery...")
+                }
+            }
+        }
+
+        is DetailUiState.Success -> {
+            DetailContent(
+                discovery = state.discovery,
+                onBack = onNavigateBack,
+                onDelete = {
+                    viewModel.deleteDiscovery(state.discovery) {
+                        onNavigateBack()
+                    }
+                }
+            )
+        }
+
+        is DetailUiState.Error -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = state.message,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Button(onClick = onNavigateBack) {
+                        Text("Go Back")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailContent(
+    discovery: DiscoveryEntity,
     onBack: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -44,7 +121,8 @@ fun DetailScreen(
     val scrollState = rememberScrollState()
     val scale by animateFloatAsState(
         targetValue = if (scrollState.value < 100) 1f else 0.95f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
     )
 
     Scaffold(
@@ -76,8 +154,9 @@ fun DetailScreen(
                                     Intent.EXTRA_TEXT,
                                     "🌿 Check out my plant discovery!\n\n" +
                                             "Plant: ${discovery.plantName}\n" +
-                                            "Fun Fact: ${discovery.funFact}\n" +
-                                            "Discovered on: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(discovery.timestamp)}"
+                                            "AI Fact: ${discovery.aiFact}\n" +
+                                            "Discovered on: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(discovery.timestamp)}\n\n" +
+                                            "Identified with Gemini AI 🤖"
                                 )
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Share via"))
@@ -112,12 +191,31 @@ fun DetailScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(discovery.imagePath),
-                        contentDescription = discovery.plantName,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                    // Charger l'image depuis le chemin local
+                    val imageFile = File(discovery.localImagePath)
+                    if (imageFile.exists()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(imageFile),
+                            contentDescription = discovery.plantName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Image de fallback si le fichier n'existe pas
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
 
                     // Gradient overlay at bottom
                     Box(
@@ -134,6 +232,35 @@ fun DetailScreen(
                                 )
                             )
                     )
+
+                    // Badge "Identified by Gemini AI"
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        tonalElevation = 4.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "Gemini AI",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
                 }
             }
 
@@ -177,8 +304,8 @@ fun DetailScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Fun Fact card (if available)
-            if (discovery.funFact.isNotBlank()) {
+            // AI Fact card
+            if (discovery.aiFact.isNotBlank()) {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -199,13 +326,13 @@ fun DetailScreen(
                         Spacer(Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Fun Fact",
+                                text = "AI-Generated Fact",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                text = discovery.funFact,
+                                text = discovery.aiFact,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
@@ -246,7 +373,7 @@ fun DetailScreen(
                     }
 
                     Spacer(Modifier.height(16.dp))
-                    Divider()
+                    HorizontalDivider()
                     Spacer(Modifier.height(16.dp))
 
                     // Time
@@ -355,12 +482,13 @@ fun DetailScreen(
 @Composable
 private fun DetailScreenPreviewLight() {
     PlantdiscoveryTheme(darkTheme = false) {
-        DetailScreen(
-            discovery = Discovery(
+        DetailContent(
+            discovery = DiscoveryEntity(
                 id = 1,
+                userId = "preview_user",
                 plantName = "Monstera Deliciosa",
-                funFact = "The Monstera is known for its unique leaf structure with natural holes. It can grow up to 70 feet in the wild!",
-                imagePath = "",
+                aiFact = "This tropical plant is known for its large, perforated leaves that develop naturally as it matures. Native to Central American rainforests, it's also called the 'Swiss cheese plant' due to its distinctive holes.",
+                localImagePath = "",
                 timestamp = System.currentTimeMillis()
             ),
             onBack = {},
@@ -373,12 +501,13 @@ private fun DetailScreenPreviewLight() {
 @Composable
 private fun DetailScreenPreviewDark() {
     PlantdiscoveryTheme(darkTheme = true) {
-        DetailScreen(
-            discovery = Discovery(
+        DetailContent(
+            discovery = DiscoveryEntity(
                 id = 1,
-                plantName = "Snake Plant",
-                funFact = "Snake plants are one of the best air-purifying plants. They release oxygen at night, making them perfect for bedrooms!",
-                imagePath = "",
+                userId = "preview_user",
+                plantName = "Sansevieria trifasciata",
+                aiFact = "Snake plants are one of the best air-purifying plants according to NASA. They release oxygen at night, making them perfect for bedrooms!",
+                localImagePath = "",
                 timestamp = System.currentTimeMillis()
             ),
             onBack = {},
@@ -387,36 +516,17 @@ private fun DetailScreenPreviewDark() {
     }
 }
 
-@Preview(name = "No Fun Fact", showBackground = true)
+@Preview(name = "No AI Fact", showBackground = true)
 @Composable
-private fun DetailScreenPreviewNoFunFact() {
+private fun DetailScreenPreviewNoFact() {
     PlantdiscoveryTheme {
-        DetailScreen(
-            discovery = Discovery(
+        DetailContent(
+            discovery = DiscoveryEntity(
                 id = 1,
-                plantName = "Rose",
-                funFact = "",
-                imagePath = "",
-                timestamp = System.currentTimeMillis()
-            ),
-            onBack = {},
-            onDelete = {}
-        )
-    }
-}
-
-@Preview(name = "Delete Dialog", showBackground = true)
-@Composable
-private fun DetailScreenPreviewWithDialog() {
-    var showDialog by remember { mutableStateOf(true) }
-
-    PlantdiscoveryTheme {
-        DetailScreen(
-            discovery = Discovery(
-                id = 1,
-                plantName = "Cactus",
-                funFact = "Cacti can store water for months and survive in extreme heat!",
-                imagePath = "",
+                userId = "preview_user",
+                plantName = "Rosa canina",
+                aiFact = "",
+                localImagePath = "",
                 timestamp = System.currentTimeMillis()
             ),
             onBack = {},

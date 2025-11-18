@@ -2,17 +2,19 @@ package com.example.plantdiscovery.ui.screens
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,7 +23,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -30,128 +31,47 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
-import com.example.plantdiscovery.ui.theme.*
+import com.example.plantdiscovery.viewmodel.DiscoveryViewModel
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import android.content.res.Configuration
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.plantdiscovery.ui.theme.PlantdiscoveryTheme
 
-// ========== PREVIEWS ==========
-
-@Preview(name = "Light Mode - Empty", showBackground = true)
-@Composable
-private fun CaptureScreenPreviewLight() {
-    PlantdiscoveryTheme(darkTheme = false) {
-        CaptureScreen(
-            imagePath = null,
-            onCaptureClick = {},
-            onGalleryClick = {},
-            loading = false,
-            onCancel = {},
-            onIdentify = {}
-        )
-    }
-}
-
-@Preview(name = "Dark Mode - Empty", showBackground = true)
-@Composable
-private fun CaptureScreenPreviewDark() {
-    PlantdiscoveryTheme(darkTheme = true) {
-        CaptureScreen(
-            imagePath = null,
-            onCaptureClick = {},
-            onGalleryClick = {},
-            loading = false,
-            onCancel = {},
-            onIdentify = {}
-        )
-    }
-}
-
-@Preview(name = "Loading State", showBackground = true)
-@Composable
-private fun CaptureScreenPreviewLoading() {
-    PlantdiscoveryTheme {
-        CaptureScreen(
-            imagePath = null,
-            onCaptureClick = {},
-            onGalleryClick = {},
-            loading = true,
-            onCancel = {},
-            onIdentify = {}
-        )
-    }
-}
-
-@Preview(name = "With Image Selected", showBackground = true)
-@Composable
-private fun CaptureScreenPreviewWithImage() {
-    PlantdiscoveryTheme {
-        // Note: Preview ne peut pas afficher d'images réelles, mais montre la structure
-        CaptureScreen(
-            imagePath = "sample_path.jpg",
-            onCaptureClick = {},
-            onGalleryClick = {},
-            loading = false,
-            onCancel = {},
-            onIdentify = {}
-        )
-    }
-}
-
-@Preview(name = "Dark Mode - Loading", showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun CaptureScreenPreviewDarkLoading() {
-    PlantdiscoveryTheme(darkTheme = true) {
-        CaptureScreen(
-            imagePath = null,
-            onCaptureClick = {},
-            onGalleryClick = {},
-            loading = true,
-            onCancel = {},
-            onIdentify = {}
-        )
-    }
-}
-
-
+/**
+ * Écran de capture de plantes avec identification IA via Gemini
+ * Intègre Firebase Vertex AI pour l'identification automatique
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CaptureScreen(
-    imagePath: String?,
-    onCaptureClick: (Uri) -> Unit,
-    onGalleryClick: (Uri) -> Unit,
-    loading: Boolean,
-    onCancel: () -> Unit,
-    onIdentify: (Uri) -> Unit = {}
+    viewModel: DiscoveryViewModel,
+    onNavigateToDetail: (Int) -> Unit,
+    onCancel: () -> Unit
 ) {
     val context = LocalContext.current
+    val uiState by viewModel.captureState.collectAsStateWithLifecycle()
+
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showPermissionDialog by remember { mutableStateOf(false) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
 
     // Animation states
     val scale by animateFloatAsState(
         targetValue = if (selectedImageUri != null) 1f else 0.95f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
     )
 
-    // Infinite loading animation
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val loadingRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+    // Navigation automatique après succès
+    LaunchedEffect(uiState.savedDiscoveryId) {
+        uiState.savedDiscoveryId?.let { id ->
+            onNavigateToDetail(id)
+            viewModel.resetCaptureState()
+        }
+    }
 
     // Launchers
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -159,7 +79,9 @@ fun CaptureScreen(
     ) { success ->
         if (success && capturedImageUri != null) {
             selectedImageUri = capturedImageUri
-            onCaptureClick(capturedImageUri!!)
+            // Convertir Uri en Bitmap
+            val bitmap = uriToBitmap(context, capturedImageUri!!)
+            selectedBitmap = bitmap
         }
     }
 
@@ -180,7 +102,9 @@ fun CaptureScreen(
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
-            onGalleryClick(it)
+            // Convertir Uri en Bitmap
+            val bitmap = uriToBitmap(context, it)
+            selectedBitmap = bitmap
         }
     }
 
@@ -189,7 +113,10 @@ fun CaptureScreen(
             TopAppBar(
                 title = { Text("Discover New Plant", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onCancel, enabled = !loading) {
+                    IconButton(
+                        onClick = onCancel,
+                        enabled = !uiState.isProcessing
+                    ) {
                         Icon(Icons.Default.Close, "Close")
                     }
                 },
@@ -268,7 +195,7 @@ fun CaptureScreen(
 
                     // Loading overlay
                     this@Card.AnimatedVisibility(
-                        visible = loading,
+                        visible = uiState.isProcessing,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
@@ -286,7 +213,7 @@ fun CaptureScreen(
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    "Identifying plant...",
+                                    "🌿 Identifying with Gemini AI...",
                                     color = Color.White,
                                     style = MaterialTheme.typography.titleMedium
                                 )
@@ -298,6 +225,36 @@ fun CaptureScreen(
 
             Spacer(Modifier.height(24.dp))
 
+            // Error message
+            uiState.error?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
+
             // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -305,11 +262,13 @@ fun CaptureScreen(
             ) {
                 // Camera button
                 FilledTonalButton(
-                    onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
+                    onClick = {
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(64.dp),
-                    enabled = !loading,
+                    enabled = !uiState.isProcessing,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -332,7 +291,7 @@ fun CaptureScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(64.dp),
-                    enabled = !loading,
+                    enabled = !uiState.isProcessing,
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
@@ -354,16 +313,20 @@ fun CaptureScreen(
 
             // Identify with AI button
             AnimatedVisibility(
-                visible = selectedImageUri != null,
+                visible = selectedImageUri != null && !uiState.isProcessing,
                 enter = slideInVertically() + fadeIn(),
                 exit = slideOutVertically() + fadeOut()
             ) {
                 Button(
-                    onClick = { selectedImageUri?.let { onIdentify(it) } },
+                    onClick = {
+                        selectedBitmap?.let { bitmap ->
+                            viewModel.identifyAndSavePlant(bitmap)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
-                    enabled = !loading,
+                    enabled = selectedBitmap != null && !uiState.isProcessing,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -373,31 +336,17 @@ fun CaptureScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        if (loading) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 3.dp,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                "Identifying...",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                "Identify with AI",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "Identify with Gemini AI",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -405,7 +354,7 @@ fun CaptureScreen(
             Spacer(Modifier.height(16.dp))
 
             // Info card
-            if (selectedImageUri != null && !loading) {
+            if (selectedImageUri != null && !uiState.isProcessing) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -425,7 +374,7 @@ fun CaptureScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
-                            "Our AI will identify the plant and save it to your journal",
+                            "Gemini AI will identify the plant and save it to your journal automatically",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -468,6 +417,27 @@ fun CaptureScreen(
     }
 }
 
+/**
+ * Convertir Uri en Bitmap pour l'envoyer à Gemini
+ */
+private fun uriToBitmap(context: Context, uri: Uri): Bitmap? {
+    return try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+/**
+ * Créer un Uri pour la capture photo
+ */
 private fun createImageUri(context: Context): Uri {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     val imageFileName = "PLANT_$timeStamp.jpg"

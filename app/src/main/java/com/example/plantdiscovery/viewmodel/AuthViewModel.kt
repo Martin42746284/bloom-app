@@ -1,4 +1,4 @@
-package com.example.plantdiscovery
+package com.example.plantdiscovery.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

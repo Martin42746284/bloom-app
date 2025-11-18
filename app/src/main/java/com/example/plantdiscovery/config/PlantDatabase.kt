@@ -1,16 +1,15 @@
 package com.example.plantdiscovery.config
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.plantdiscovery.dao.DiscoveryDao
 import com.example.plantdiscovery.entities.DiscoveryEntity
-import android.content.Context
-import androidx.room.Room
-import com.example.plantdiscovery.model.Discovery
 
 @Database(
-    entities = [Discovery::class],
-    version = 1,
+    entities = [DiscoveryEntity::class],
+    version = 1,  // ⬅️ Garde version 1 (ou réinitialise à 1)
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,12 +25,13 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "plant_discovery_database"
-                ).build()
+                    "plantdiscovery_database"
+                )
+                    .fallbackToDestructiveMigration()  // ⬅️ Supprime et recrée la DB
+                    .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
 }
-

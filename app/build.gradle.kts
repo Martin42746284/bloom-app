@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.camerax.view)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.ai)
     implementation(libs.playservices.auth)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

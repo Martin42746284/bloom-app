@@ -4,10 +4,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.*
 import androidx.navigation.compose.*
-import com.example.plantdiscovery.AuthViewModel
-import com.example.plantdiscovery.JournalViewModel
 import com.example.plantdiscovery.repository.DiscoveryRepository
 import com.example.plantdiscovery.ui.screens.*
+import com.example.plantdiscovery.viewmodel.AuthViewModel
+import com.example.plantdiscovery.viewmodel.JournalViewModel
+import com.example.plantdiscovery.viewmodel.DiscoveryViewModel
+import com.example.plantdiscovery.viewmodel.DetailViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 sealed class Screen(val route: String) {
@@ -26,15 +28,22 @@ fun NavGraph(
     repository: DiscoveryRepository,
     authViewModel: AuthViewModel
 ) {
-    // ✅ Déclaré UNE SEULE FOIS au niveau du NavGraph
     val context = LocalContext.current
-    val viewModel = remember { JournalViewModel(repository) }
-    val discoveries by viewModel.discoveries.collectAsState()
+
+    // Vérifier si l'utilisateur est déjà connecté
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val startDestination = if (currentUser != null) {
+        Screen.JournalList.route
+    } else {
+        Screen.SignIn.route
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Screen.SignIn.route
+        startDestination = startDestination
     ) {
+        // ========== AUTHENTICATION SCREENS ==========
+
         // Sign In Screen
         composable(Screen.SignIn.route) {
             val loading by authViewModel.loading.collectAsState()
@@ -51,7 +60,6 @@ fun NavGraph(
                     }
                 },
                 onGoogleClick = {
-                    // ✅ CORRIGÉ - Supprimé webClientId
                     authViewModel.signInWithGoogle(context = context) {
                         navController.navigate(Screen.JournalList.route) {
                             popUpTo(Screen.SignIn.route) { inclusive = true }
@@ -81,7 +89,6 @@ fun NavGraph(
                     }
                 },
                 onGoogleClick = {
-                    // ✅ CORRIGÉ - Supprimé webClientId
                     authViewModel.signInWithGoogle(context = context) {
                         navController.navigate(Screen.JournalList.route) {
                             popUpTo(Screen.SignUp.route) { inclusive = true }
@@ -95,60 +102,61 @@ fun NavGraph(
             )
         }
 
+        // ========== MAIN APP SCREENS ==========
 
         // Journal List Screen
         composable(Screen.JournalList.route) {
+            val journalViewModel = remember { JournalViewModel(repository) }
+
             JournalListScreen(
-                discoveries = discoveries,
+                viewModel = journalViewModel,
                 onAddClick = {
                     navController.navigate(Screen.Capture.route)
                 },
-                onCardClick = { discovery ->
-                    navController.navigate(Screen.Detail.createRoute(discovery.id))
+                onCardClick = { discoveryId ->
+                    navController.navigate(Screen.Detail.createRoute(discoveryId))
                 },
-                onDeleteClick = { discovery ->
-                    viewModel.deleteDiscovery(discovery)
+                onSignOut = {
+                    FirebaseAuth.getInstance().signOut()
+                    navController.navigate(Screen.SignIn.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
 
-//        // Capture Screen
-//        composable(Screen.Capture.route) {
-//            val context = LocalContext.current
-//
-//            CaptureScreen(
-//                imagePath = null,
-//                onCaptureClick = { /* Déjà géré dans CaptureScreen */ },
-//                onGalleryClick = { /* Déjà géré dans CaptureScreen */ },
-//                loading = false,
-//                onCancel = {
-//                    navController.popBackStack()
-//                },
-//                onSave = { plantName, imageUri ->
-//                    viewModel.addDiscovery(plantName, imageUri, context)
-//                    navController.popBackStack()
-//                }
-//            )
-//        }
+        // Capture Screen (avec Gemini AI)
+        composable(Screen.Capture.route) {
+            val discoveryViewModel = remember { DiscoveryViewModel(repository) }
 
+            CaptureScreen(
+                viewModel = discoveryViewModel,
+                onNavigateToDetail = { discoveryId ->
+                    navController.navigate(Screen.Detail.createRoute(discoveryId)) {
+                        popUpTo(Screen.Capture.route) { inclusive = true }
+                    }
+                },
+                onCancel = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Detail Screen
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("discoveryId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("discoveryId")
-            val discovery = discoveries.find { it.id == id }
+            val discoveryId = backStackEntry.arguments?.getInt("discoveryId") ?: return@composable
+            val detailViewModel = remember { DetailViewModel(repository) }
 
-            if (discovery != null) {
-                DetailScreen(
-                    discovery = discovery,
-                    onBack = { navController.popBackStack() },
-                    onDelete = {
-                        viewModel.deleteDiscovery(discovery)  // ✅ Supprime l'image + DB
-                        navController.popBackStack()
-                    }
-                )
-            }
+            DetailScreen(
+                viewModel = detailViewModel,
+                discoveryId = discoveryId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
-
     }
 }

@@ -13,7 +13,7 @@ serialization = "1.6.2"
 navigation = "2.9.6"
 coil = "2.5.0"
 camerax = "1.5.1"
-firebaseBom = "34.5.0"
+firebaseBom = "34.6.0"  # ⬅️ dernière version
 firebaseAuth = "22.3.0"
 playservicesAuth = "21.4.0"
 coroutines = "1.8.1"
@@ -45,30 +45,33 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
-# Compose navigation
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-# CameraX
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
-# Coroutines
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
-# Firebase
+
+# Firebase - BoM et bibliothèques
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx", version = "22.3.0" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }  # ⬅️ NOUVEAU : Firebase AI Logic SDK
 playservices-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playservicesAuth" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database" }
+
+# Compose Material Icons Extended
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+
+# Credentials pour Google Sign-In
 google-firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuthVersion" }
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
-firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiText" }
 
 [plugins]
@@ -78,4 +81,3 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version = "2.0.0-1.0.21" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version = "1.9.20" }
 google-services = { id = "com.google.gms.google-services", version = "4.4.4" }
-
