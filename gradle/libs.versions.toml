@@ -13,7 +13,7 @@ serialization = "1.6.2"
 navigation = "2.9.6"
 coil = "2.5.0"
 camerax = "1.5.1"
-firebaseBom = "34.6.0"  # ⬅️ dernière version
+firebaseBom = "34.6.0"
 firebaseAuth = "22.3.0"
 playservicesAuth = "21.4.0"
 coroutines = "1.8.1"
@@ -54,20 +54,18 @@ camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", vers
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
-# Firebase - BoM et bibliothèques
+# Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
-firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }  # ⬅️ NOUVEAU : Firebase AI Logic SDK
+firebase-ai = { group = "com.google.firebase", name = "firebase-ai" } # la version est prise par le BoM, NE PAS mettre de version ici !!
 playservices-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playservicesAuth" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 
-# Compose Material Icons Extended
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 
-# Credentials pour Google Sign-In
 google-firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuthVersion" }
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }

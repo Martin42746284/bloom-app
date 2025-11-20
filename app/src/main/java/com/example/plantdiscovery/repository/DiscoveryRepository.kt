@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.example.plantdiscovery.dao.DiscoveryDao
 import com.example.plantdiscovery.entities.DiscoveryEntity
+import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +22,7 @@ class DiscoveryRepository(
     private val auth = FirebaseAuth.getInstance()
 
     // Initialiser le modèle Gemini via Firebase Vertex AI
-    private val generativeModel = Firebase.ai(backend = GenerativeBackend.vertexAI())
+    private val generativeModel = Firebase.ai(backend = GenerativeBackend.googleAI())
         .generativeModel("gemini-2.5-flash")
 
     // Récupérer les découvertes de l'utilisateur connecté
@@ -148,3 +148,4 @@ class DiscoveryRepository(
         file.absolutePath
     }
 }
+
